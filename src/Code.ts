@@ -1,26 +1,97 @@
 
 class Bike {
-  name: string;
-  price: string;
-  allPrice: string;
-  displacement: string;
-  year: string;
-  milage: string;
+  public name: string;
+  public price: string;
+  public allPrice: string;
+  public displacement: string;
+  public year: string;
+  public milage: string;
+  public image: string;
 }
 
-function ParseGoobike(content: string) {
+function OnAddURL(event: GoogleAppsScript.Events.SheetsOnEdit) {
+  const range = event.range;
+  if (range.getColumn() !== 1) {
+    return;
+  }
+  const value: string = range.getCell(1, 1).getValue();
+  const content = GetByGoobike(value);
+  if (content === undefined ||  content === null) { return ; }
+  const bike = ParseGoobike(content);
+  if (bike === undefined || bike === null) { return ; }
+  WriteBike(range.getRow(), bike);
+  // tslint:disable-next-line:no-console
+  console.log("write bike ", bike);
+}
+
+function WriteBike(row: number, bike: Bike) {
+  const range = SpreadsheetApp.getActiveSheet().getRange(row, 2, 1, 7);
+  const array = [ bike.name, bike.price, bike.allPrice, bike.displacement, bike.year, bike.milage, bike.image ];
+  range.setValues([array]);
+}
+
+function GetByGoobike(url: string) {
+  if (url === undefined || url == null || url === "") {
+    return;
+  }
+  const content = UrlFetchApp.fetch(url).getContentText("euc-jp");
+  return content;
+}
+
+function ParseGoobike(content: string): Bike {
   const parser = Parser
     .data(content)
     .setLog();
-  const title = parser
+  const name = parser
     .from("<title>")
     .to("｜")
     .build();
   const price = parser
-    .from(`kakaku`)
-    .to(";")
+    .from(`kakaku       = '`)
+    .to("';")
     .build();
-  return { title, price};
+  const allPrice = parser
+    .from("<td valign='middle' nowrap class='col3'><p>支払総額：<strong>")
+    .to("</strong>")
+    .build();
+  const displacement = parser
+    .from("haiki = '")
+    .to("';")
+    .build();
+  const year = parser
+    .from("nenshiki_t_no_n = '")
+    .to("';")
+    .build();
+  const milage = parser
+    .from("soukou = '")
+    .to("';")
+    .build();
+  const image = parser
+    .from(`<meta property="og:image" content="`)
+    .to(`" />`)
+    .build();
+  return { name, price, allPrice, displacement, year, milage, image };
+}
+
+function testSave() {
+  const bike: Bike = {
+    name: "bike",
+    price: "100",
+    // tslint:disable-next-line:object-literal-sort-keys
+    allPrice: "150",
+    displacement: "450",
+    year: "2019",
+    milage: "100",
+    image: "image",
+  };
+  WriteBike(3, bike);
+}
+
+function testOnGoobike() {
+  const url = "https://www.goobike.com/spread/8500220B30161209002/index.html";
+  const content = GetByGoobike(url);
+  const bike = ParseGoobike(content);
+  Logger.log(bike);
 }
 
 function test() {
