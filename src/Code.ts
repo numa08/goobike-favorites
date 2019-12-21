@@ -9,23 +9,25 @@ class Bike {
   public image: string;
 }
 
-function OnAddURL(event: GoogleAppsScript.Events.SheetsOnEdit) {
-  const range = event.range;
-  if (range.getColumn() !== 1) {
+function OnAddURL(event: GoogleAppsScript.Events.SheetsOnFormSubmit) {
+  // tslint:disable-next-line:no-console
+  console.log("form sent", event.namedValues);
+  if (event.namedValues.URL === undefined) {
     return;
   }
-  const value: string = range.getCell(1, 1).getValue();
+
+  const value: string = event.namedValues.URL[0];
   const content = GetByGoobike(value);
   if (content === undefined ||  content === null) { return ; }
   const bike = ParseGoobike(content);
   if (bike === undefined || bike === null) { return ; }
-  WriteBike(range.getRow(), bike);
+  WriteBike(event.range.getRow(), bike);
   // tslint:disable-next-line:no-console
   console.log("write bike ", bike);
 }
 
 function WriteBike(row: number, bike: Bike) {
-  const range = SpreadsheetApp.getActiveSheet().getRange(row, 2, 1, 7);
+  const range = SpreadsheetApp.getActiveSheet().getRange(row, 3, 1, 7);
   const array = [ bike.name, bike.price, bike.allPrice, bike.displacement, bike.year, bike.milage, bike.image ];
   range.setValues([array]);
 }
